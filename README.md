@@ -6,10 +6,17 @@ A classic 2D side-scrolling shooter game built with Python and Pygame. Control K
 ![Python](https://img.shields.io/badge/Python-3.x-green)
 ![Pygame](https://img.shields.io/badge/Pygame-2.0+-orange)
 
+## Demo
+
+![Kurochan Gameplay Demo](Screenshots/demo.gif)
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Gameplay](#gameplay)
 - [Installation](#installation)
 - [How to Play](#how-to-play)
@@ -62,6 +69,23 @@ A classic 2D side-scrolling shooter game built with Python and Pygame. Control K
 - Dynamic enemy spawning system
 - Screen boundary enforcement
 - Smooth animation frame handling
+
+---
+
+## Screenshots
+
+Below are some gameplay screenshots showcasing Kurochan in action:
+
+### Main Gameplay
+![Gameplay Screenshot](Screenshots/gameplay.jpeg)
+
+### Pause Screen
+![Pause Screen](Screenshots/game_paused.png)
+
+### Game Over Screen
+![Game Over](Screenshots/game_over.png)
+
+<!-- Add more screenshots as needed -->
 
 ---
 
