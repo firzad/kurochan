@@ -1,49 +1,64 @@
-#Processing for Kurochan 
+#Processing for Kurochan
 
-import pygame, sys, classes
+import pygame, sys, classes, math
 from random import randint
 
+# Movement Constants
+KURO_SPEED = 8
+BEAM_SPEED = 14
+
+# Cache images to avoid repeated loading
+kuro_img_right = None
+kuro_img_left = None
+
+def init_images():
+	global kuro_img_right, kuro_img_left
+	if kuro_img_right is None:
+		kuro_img_right = pygame.image.load("Images/kuro.png")
+		kuro_img_left = pygame.image.load("Images/kuroflp.png")
 
 def process(screen, kuro, FPS, totalframes, SCREENWIDTH, SCREENHEIGHT):
+	init_images()
 
-	#PROCESSING
+	pause_pressed = False
 
-	for event in pygame.event.get():        #Functionality To Close Window
+	# Event Handling
+	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			# easygui.msgbox('Flies Fried: ' + str(classes.Fly.count),'COUNT')
-			# easygui.msgbox('The Score Is: ' + str(classes.Fly.count*5 + classes.Boss.count*100) + '!!!','SCOREBOARD')
 			pygame.quit()
 			sys.exit()
-
-
-	# if classes.Fly.total >= 20:
-	# 	pygame.quit()
-	# 	sys.exit()
+		if event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
+				pause_pressed = True
 
 	keys = pygame.key.get_pressed()
 
-	if keys[pygame.K_RIGHT]:									#Key Mappings
-		kuro.image = pygame.image.load("Images/kuro.png")
-		kuro.velx = 5
-		classes.Kuro.go_right = True		
+	# Character Movement
+	if keys[pygame.K_RIGHT]:
+		kuro.image = kuro_img_right
+		kuro.velx = KURO_SPEED
+		classes.Kuro.go_right = True
 	elif keys[pygame.K_LEFT]:
-		kuro.image = pygame.image.load("Images/kuroflp.png")
-		kuro.velx = -5
+		kuro.image = kuro_img_left
+		kuro.velx = -KURO_SPEED
 		classes.Kuro.go_right = False
 	else:
 		kuro.velx = 0
 
+	# Jump
 	if keys[pygame.K_UP]:
 		kuro.jump = True
 
+	# Shoot Beam
 	if keys[pygame.K_SPACE]:
 		b = classes.KuroBeam(kuro.rect.x, kuro.rect.y, "Images/blright.png", kuro.go_right)
-		
-		if kuro.go_right:					#Direction of Kuro Beam
-			b.velx = 8
-		else:
+		b.velx = BEAM_SPEED if kuro.go_right else -BEAM_SPEED
+		if not kuro.go_right:
 			b.image = pygame.transform.flip(b.image, True, False)
-			b.velx =  -8
+
+	# Pause (event-based to prevent toggle spam)
+	if pause_pressed:
+		return "PAUSE_TOGGLE"
 
 	# if keys[pygame.K_RETURN] and classes.KuroShuriken.count>0:
 	# 	c = classes.KuroShuriken(kuro.rect.x, kuro.rect.y, "Images/shkn.png", kuro.go_right)
@@ -66,7 +81,12 @@ def process(screen, kuro, FPS, totalframes, SCREENWIDTH, SCREENHEIGHT):
 
 def spawn(FPS, totalframes, SCREENWIDTH, SCREENHEIGHT):				#AutoSpawn Flies
 
-	interval = FPS * 2
+	# Progressive difficulty - spawn rate increases over time
+	base_interval = FPS * 2.5
+	min_interval = FPS * 0.8
+	difficulty_factor = 0.0001
+	interval = max(min_interval, base_interval * math.exp(-difficulty_factor * totalframes))
+	interval = int(interval)
 
 	boss_interval = FPS * 25
 
@@ -95,8 +115,8 @@ def spawn(FPS, totalframes, SCREENWIDTH, SCREENHEIGHT):				#AutoSpawn Flies
 	elif s == 3:
 		y = 250
 
-	if totalframes % interval == 0:
-		classes.Fly(x, y, img)
+	if totalframes % interval == 0 and totalframes > 0:
+		classes.Fly(x, y, img, totalframes)
 	if totalframes == boss_interval:
 		classes.Boss(SCREENWIDTH-245, SCREENHEIGHT-250, boss_img)
 
@@ -104,7 +124,18 @@ def spawn(FPS, totalframes, SCREENWIDTH, SCREENHEIGHT):				#AutoSpawn Flies
 
 def attack(FPS, totalframes):
 
-	r = randint(5,15)
+	# Progressive boss attack frequency
+	base_min, base_max = 8, 15
+	min_min, min_max = 3, 7
+
+	if totalframes > 600:
+		progress = min((totalframes - 600) / 1200.0, 1.0)
+		current_min = int(base_min - (base_min - min_min) * progress)
+		current_max = int(base_max - (base_max - min_max) * progress)
+	else:
+		current_min, current_max = base_min, base_max
+
+	r = randint(current_min, current_max)
 	interval = FPS * r
 
 	for boss in classes.Boss.List:
@@ -135,7 +166,7 @@ def collisions():
 
 	for boss in classes.Boss.List:
 		if pygame.sprite.spritecollide(boss, classes.Kuro.List, False):
- 			boss.velx = -boss.velx
+			boss.velx = -boss.velx
 
 	for beam in classes.KuroBeam.List:
 		if pygame.sprite.spritecollide(beam, classes.Boss.List, False) or pygame.sprite.spritecollide(beam, classes.BossAttack.List, False):

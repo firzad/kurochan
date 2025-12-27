@@ -39,15 +39,19 @@ class Kuro(BaseClass):						# Define Kurochan
 	go_right = True
 
 	def __init__(self, x, y, image_string):
-		
+
 		BaseClass.__init__(self, x, y, image_string)
 		Kuro.List.add(self)
 
-		self.velx, self.vely = 0, 5
+		self.velx = 0
+		self.vely = 0
+		self.jump_velocity = -24
+		self.gravity = 0.8
 
 		self.health = 1000
 
-		self.jump, self.land = False, False
+		self.jump = False
+		self.on_ground = True
 
 	def motion(self, SCREENWIDTH, SCREENHEIGHT):
 
@@ -63,26 +67,23 @@ class Kuro(BaseClass):						# Define Kurochan
 		self.__jump(SCREENHEIGHT)
 
 
-	def __jump(self, SCREENHEIGHT):					#Jump Motion
+	def __jump(self, SCREENHEIGHT):					#Jump Motion with gravity
 
-		max_jump = 150
+		ground_level = SCREENHEIGHT - 50
 
-		if self.jump:
+		if self.jump and self.on_ground:
+			self.vely = self.jump_velocity
+			self.on_ground = False
 
-			if self.rect.y < max_jump:
-				self.land = True
+		if not self.on_ground:
+			self.vely += self.gravity
+			self.rect.y += self.vely
 
-			if self.land:
-				self.rect.y += self.vely
-
-				predicted_location = self.rect.y + self.vely
-
-				if predicted_location + self.height > SCREENHEIGHT - 50:
-					self.jump = False
-					self.land = False
-
-			else:
-				self.rect.y -= self.vely
+			if self.rect.y + self.height >= ground_level:
+				self.rect.y = ground_level - self.height
+				self.vely = 0
+				self.on_ground = True
+				self.jump = False
 
 
 class KuroBeam(pygame.sprite.Sprite):
@@ -150,13 +151,18 @@ class Fly(BaseClass):
 	count = 0
 	total = 0
 
-	def __init__(self, x, y, image_string):
+	def __init__(self, x, y, image_string, totalframes=0):
 
 		BaseClass.__init__(self, x, y, image_string)
 		Fly.List.add(self)
 		Fly.total += 1
 
-		self.velx = randint(1, 4)
+		# Progressive speed scaling based on game time
+		base_speed = randint(1, 4)
+		speed_multiplier = 1 + (totalframes / 10000.0)
+		speed_multiplier = min(speed_multiplier, 2.0)
+
+		self.velx = int(base_speed * speed_multiplier)
 		self.vely = 3
 		self.amplitude = randint(50,150)
 		self.period = randint(3,4)/100.0
@@ -178,22 +184,22 @@ class Fly(BaseClass):
 			fly.fly(SCREENWIDTH)
 
 			if fly.health <= 0:
-				
-				if fly.rect.y + fly.height < SCREENHEIGHT:
-					fly.rect.y += fly.vely
 
 				fly.image = pygame.image.load("Images/deadfly.png")
 				if fly.velx < 0:
 					fly.image = pygame.transform.flip(fly.image, True, False)
 				fly.velx = 0
-				
+				fly.fall_velocity = 0
+				fly.gravity = 0.5
+
 				Fly.DeadFly.append(fly)					#Keep List Of Dead Flies.
 				Fly.List.remove(fly)
 				Fly.count += 1
 				Fly.total -= 1
-			
-		for fly in Fly.DeadFly:							#Drop Dead Flies.
-			fly.rect.y += 3
+
+		for fly in Fly.DeadFly:							#Drop Dead Flies with gravity.
+			fly.fall_velocity += fly.gravity
+			fly.rect.y += fly.fall_velocity
 			if fly.rect.y > SCREENHEIGHT:
 				Fly.DeadFly.remove(fly)
 				fly.destroy(Fly)
