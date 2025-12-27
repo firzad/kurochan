@@ -1,6 +1,6 @@
 #Processing for Kurochan 
 
-import pygame, sys, classes,easygui
+import pygame, sys, classes
 from random import randint
 
 
